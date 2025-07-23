@@ -1,428 +1,642 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>文件上传</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#165DFF',
-            secondary: '#0FC6C2',
-            neutral: '#F5F7FA',
-            dark: '#1D2129',
-          },
-          fontFamily: {
-            inter: ['Inter', 'system-ui', 'sans-serif'],
-          },
-        },
-      }
-    }
-  </script>
-  
-  <style type="text/tailwindcss">
-    @layer utilities {
-      .content-auto {
-        content-visibility: auto;
-      }
-      .upload-shadow {
-        box-shadow: 0 4px 20px rgba(22, 93, 255, 0.15);
-      }
-      .btn-hover {
-        @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
-      }
-      .input-focus {
-        @apply focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-200;
-      }
-    }
-  </style>
-</head>
-<body class="font-inter bg-neutral min-h-screen flex flex-col">
-  <div class="container mx-auto px-4 py-8 max-w-4xl flex-grow">
-    <!-- 标题 -->
-    <div class="text-center mb-10">
-      <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-dark mb-2">文件上传</h1>
-      <p class="text-gray-500">简单、快速地分享你的文件</p>
-    </div>
-    
-    <!-- 上传区域 -->
-    <div class="bg-white rounded-xl p-6 mb-8 upload-shadow">
-      <h2 class="text-xl font-semibold text-dark mb-4 flex items-center">
-        <i class="fa fa-cloud-upload text-primary mr-2"></i>上传文件
-      </h2>
-      
-      <div id="upload-container" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-all duration-300 hover:border-primary cursor-pointer">
-        <input type="file" id="file-input" class="hidden" multiple>
-        
-        <div id="drop-area" class="py-4">
-          <i class="fa fa-file-o text-4xl text-gray-400 mb-3"></i>
-          <p class="text-gray-500 mb-2">拖放文件到这里，或<span class="text-primary font-medium">点击上传</span></p>
-          <p class="text-sm text-gray-400">支持批量上传，最大文件大小：100MB</p>
-        </div>
-        
-        <div id="upload-progress-container" class="hidden mt-4">
-          <div class="bg-gray-200 rounded-full h-2.5 w-full">
-            <div id="upload-progress-bar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
-          </div>
-          <p id="upload-progress-text" class="text-sm text-gray-500 mt-1">准备上传...</p>
-        </div>
-        
-        <div id="file-list" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-      </div>
-      
-      <!-- 确认上传按钮 -->
-      <div class="mt-4 flex justify-center">
-        <button id="upload-btn" class="bg-primary text-white px-6 py-3 rounded-lg flex items-center btn-hover disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-          <i class="fa fa-upload mr-2"></i>
-          <span>确认上传</span>
-        </button>
-      </div>
-    </div>
-    
-    <!-- 分类区域 -->
-    <div class="bg-white rounded-xl p-6 mb-8 upload-shadow">
-      <h2 class="text-xl font-semibold text-dark mb-4 flex items-center">
-        <i class="fa fa-folder text-primary mr-2"></i>文件分类
-      </h2>
-      
-      <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-grow">
-          <label for="category" class="block text-sm font-medium text-gray-700 mb-1">选择分类</label>
-          <div class="relative">
-            <select id="category" class="w-full rounded-lg border-gray-300 shadow-sm py-2 px-3 border focus:outline-none input-focus">
-              <option value="tp">图片 (tp)</option>
-              <option value="yp">音频/视频 (yp)</option>
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <i class="fa fa-chevron-down text-xs"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 链接区域 -->
-    <div class="bg-white rounded-xl p-6 upload-shadow">
-      <h2 class="text-xl font-semibold text-dark mb-4 flex items-center">
-        <i class="fa fa-link text-primary mr-2"></i>分享链接
-      </h2>
-      
-      <div class="relative">
-        <input type="text" id="share-link" readonly class="w-full rounded-lg border-gray-300 shadow-sm py-3 px-4 border focus:outline-none input-focus bg-gray-50" placeholder="上传文件后将生成分享链接">
-        <button id="copy-link" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary text-white px-3 py-1.5 rounded-md text-sm btn-hover">
-          <i class="fa fa-copy mr-1"></i> 复制
-        </button>
-      </div>
-      
-      <div id="copy-notification" class="hidden mt-2 text-sm text-green-600 flex items-center">
-        <i class="fa fa-check-circle mr-1"></i> 链接已复制到剪贴板
-      </div>
-    </div>
-  </div>
-  
-  <!-- 页脚 -->
-  <footer class="bg-dark text-white py-6 mt-10">
-    <div class="container mx-auto px-4 text-center">
-      <p>&copy; 2025 文件上传服务 | 所有上传文件需遵守相关法律法规</p>
-    </div>
-  </footer>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时段时钟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        morning: '#FFB74D',
+                        noon: '#FFEB3B',
+                        afternoon: '#FF9800',
+                        evening: '#9C27B0',
+                        night: '#2196F3',
+                        secondary: '#FFD166',
+                        accent: '#06D6A0',
+                        dark: '#2B2D42',
+                        light: '#F7F9FC',
+                    },
+                    fontFamily: {
+                        cute: ['"Comic Sans MS"', '"Marker Felt"', 'Arial', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            }
+            .clock-hand {
+                transform-origin: bottom center;
+            }
+            .bubble {
+                position: absolute;
+                border-radius: 50%;
+                background-color: rgba(255, 255, 255, 0.3);
+                animation: float 3s infinite ease-in-out;
+            }
+            .music-visualizer {
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+                height: 24px;
+                gap: 2px;
+            }
+            .music-bar {
+                width: 3px;
+                background-color: currentColor;
+                border-radius: 3px;
+                animation: equalize 1s infinite;
+            }
+            @keyframes equalize {
+                0%, 100% { height: 4px; }
+                25% { height: 16px; }
+                50% { height: 24px; }
+                75% { height: 12px; }
+            }
+            .music-bar:nth-child(1) { animation-delay: -0.9s; }
+            .music-bar:nth-child(2) { animation-delay: -0.8s; }
+            .music-bar:nth-child(3) { animation-delay: -0.7s; }
+            .music-bar:nth-child(4) { animation-delay: -0.6s; }
+            .music-bar:nth-child(5) { animation-delay: -0.5s; }
+            .music-bar:nth-child(6) { animation-delay: -0.4s; }
+            .music-bar:nth-child(7) { animation-delay: -0.3s; }
+            .music-bar:nth-child(8) { animation-delay: -0.2s; }
+            .music-bar:nth-child(9) { animation-delay: -0.1s; }
+            .music-bar:nth-child(10) { animation-delay: 0s; }
+        }
 
-  <script>
-    // 初始化变量
-    let selectedFiles = [];
-    let currentCategory = 'tp';
-    const uploadBaseUrls = {
-      'tp': 'https://wxlcs.github.io/xxapi.github.io/tp',
-      'yp': 'https://wxlcs.github.io/xxapi.github.io/yp'
-    };
-    
-    // DOM 元素
-    const fileInput = document.getElementById('file-input');
-    const uploadContainer = document.getElementById('upload-container');
-    const dropArea = document.getElementById('drop-area');
-    const fileList = document.getElementById('file-list');
-    const uploadProgressContainer = document.getElementById('upload-progress-container');
-    const uploadProgressBar = document.getElementById('upload-progress-bar');
-    const uploadProgressText = document.getElementById('upload-progress-text');
-    const categorySelect = document.getElementById('category');
-    const shareLinkInput = document.getElementById('share-link');
-    const copyLinkBtn = document.getElementById('copy-link');
-    const copyNotification = document.getElementById('copy-notification');
-    const uploadBtn = document.getElementById('upload-btn');
-    
-    // 显示文件列表
-    function displayFileList() {
-      fileList.innerHTML = '';
-      
-      if (selectedFiles.length === 0) {
-        return;
-      }
-      
-      selectedFiles.forEach((file, index) => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'bg-gray-50 rounded-lg p-3 flex items-center justify-between';
-        
-        const fileInfo = document.createElement('div');
-        fileInfo.className = 'flex items-center';
-        
-        const fileIcon = document.createElement('div');
-        fileIcon.className = 'w-10 h-10 rounded bg-primary/10 flex items-center justify-center mr-3';
-        
-        const icon = document.createElement('i');
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        
-        // 根据文件类型设置图标
-        if (file.type.startsWith('image/')) {
-          icon.className = 'fa fa-file-image-o text-primary';
-        } else if (file.type.startsWith('video/')) {
-          icon.className = 'fa fa-file-video-o text-primary';
-        } else if (file.type.startsWith('audio/')) {
-          icon.className = 'fa fa-file-audio-o text-primary';
-        } else if (fileExt === 'pdf') {
-          icon.className = 'fa fa-file-pdf-o text-red-500';
-        } else if (['doc', 'docx'].includes(fileExt)) {
-          icon.className = 'fa fa-file-word-o text-blue-500';
-        } else if (['xls', 'xlsx'].includes(fileExt)) {
-          icon.className = 'fa fa-file-excel-o text-green-500';
-        } else if (['ppt', 'pptx'].includes(fileExt)) {
-          icon.className = 'fa fa-file-powerpoint-o text-orange-500';
-        } else {
-          icon.className = 'fa fa-file-o text-gray-500';
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
-        
-        fileIcon.appendChild(icon);
-        
-        const fileNameSize = document.createElement('div');
-        const fileName = document.createElement('p');
-        fileName.className = 'font-medium text-dark truncate max-w-xs sm:max-w-md';
-        fileName.textContent = file.name;
-        
-        const fileSize = document.createElement('p');
-        fileSize.className = 'text-sm text-gray-500';
-        fileSize.textContent = formatFileSize(file.size);
-        
-        fileNameSize.appendChild(fileName);
-        fileNameSize.appendChild(fileSize);
-        
-        fileInfo.appendChild(fileIcon);
-        fileInfo.appendChild(fileNameSize);
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'text-gray-400 hover:text-red-500 transition-colors';
-        removeBtn.innerHTML = '<i class="fa fa-times"></i>';
-        removeBtn.addEventListener('click', () => {
-          selectedFiles.splice(index, 1);
-          displayFileList();
-          updateShareLink();
-          updateUploadButtonState();
-        });
-        
-        fileItem.appendChild(fileInfo);
-        fileItem.appendChild(removeBtn);
-        fileList.appendChild(fileItem);
-      });
-    }
-    
-    // 格式化文件大小
-    function formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-    
-    // 处理文件选择
-    function handleFileSelect(files) {
-      if (!files.length) return;
-      
-      // 过滤已选择的文件
-      const newFiles = Array.from(files).filter(file => {
-        return !selectedFiles.some(selectedFile => selectedFile.name === file.name);
-      });
-      
-      if (newFiles.length === 0) {
-        alert('所选文件已在上传列表中');
-        return;
-      }
-      
-      // 添加到文件列表
-      selectedFiles = [...selectedFiles, ...newFiles];
-      displayFileList();
-      updateShareLink();
-      updateUploadButtonState();
-    }
-    
-    // 上传文件
-    function uploadFiles() {
-      if (selectedFiles.length === 0) {
-        alert('请先选择要上传的文件');
-        return;
-      }
-      
-      // 显示进度条
-      uploadProgressContainer.classList.remove('hidden');
-      uploadProgressBar.style.width = '0%';
-      uploadProgressText.textContent = '准备上传...';
-      
-      // 获取当前分类的上传地址
-      const uploadUrl = uploadBaseUrls[currentCategory];
-      
-      // 模拟上传进度
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 1;
-        uploadProgressBar.style.width = `${progress}%`;
-        uploadProgressText.textContent = `上传中: ${progress}%`;
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          uploadProgressText.textContent = '上传完成!';
-          
-          // 模拟上传完成后的延迟
-          setTimeout(() => {
-            uploadProgressContainer.classList.add('hidden');
-            alert(`文件已成功上传到: ${uploadUrl}`);
+
+        @keyframes wiggle {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(2deg);
+            }
+            75% {
+                transform: rotate(-2deg);
+            }
+        }
+
+        .wiggle:hover {
+            animation: wiggle 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-morning/20 to-secondary/20 min-h-screen flex flex-col items-center justify-center p-4 font-cute">
+    <!-- 装饰气泡 -->
+    <div class="bubble w-16 h-16 top-1/4 left-1/5" style="animation-delay: 0s;"></div>
+    <div class="bubble w-12 h-12 top-2/3 right-1/4" style="animation-delay: 0.5s;"></div>
+    <div class="bubble w-20 h-20 bottom-1/3 left-1/4" style="animation-delay: 1s;"></div>
+    <div class="bubble w-14 h-14 top-1/3 right-1/5" style="animation-delay: 1.5s;"></div>
+
+    <div class="container max-w-md mx-auto">
+        <!-- 时钟标题 -->
+        <h1 id="time-of-day" class="text-[clamp(2rem,5vw,3rem)] font-bold text-morning text-center mb-6 text-shadow wiggle">
+            <i class="fa fa-sun-o mr-2"></i>早晨
+        </h1>
+
+        <!-- 时钟主体 -->
+        <div class="relative w-[clamp(200px,80vw,350px)] h-[clamp(200px,80vw,350px)] mx-auto bg-white rounded-full shadow-lg border-8 border-morning flex items-center justify-center mb-8 overflow-hidden">
+            <!-- 时钟刻度 -->
+            <div class="absolute inset-0">
+                <!-- 12点 -->
+                <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-morning rounded-full"></div>
+                <!-- 3点 -->
+                <div class="absolute top-1/2 right-4 transform -translate-y-1/2 w-3 h-3 bg-morning rounded-full"></div>
+                <!-- 6点 -->
+                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-morning rounded-full"></div>
+                <!-- 9点 -->
+                <div class="absolute top-1/2 left-4 transform -translate-y-1/2 w-3 h-3 bg-morning rounded-full"></div>
+            </div>
+
+            <!-- 时钟指针 -->
+            <div id="hour-hand" class="absolute w-1/2 h-2 bg-dark rounded-full clock-hand ml-4" style="transform: rotate(0deg);"></div>
+            <div id="minute-hand" class="absolute w-1/2 h-1.5 bg-dark/70 rounded-full clock-hand ml-4" style="transform: rotate(0deg);"></div>
+            <div id="second-hand" class="absolute w-1/2 h-1 bg-morning rounded-full clock-hand ml-4" style="transform: rotate(0deg);"></div>
             
-            // 上传成功后清空文件列表
-            selectedFiles = [];
-            displayFileList();
-            updateShareLink();
-            updateUploadButtonState();
-          }, 800);
+            <!-- 时钟中心 -->
+            <div class="absolute w-6 h-6 bg-morning rounded-full z-10"></div>
+
+            <!-- 时钟装饰 -->
+            <div class="absolute top-1/4 left-1/4 w-4 h-4 bg-secondary rounded-full"></div>
+            <div class="absolute top-1/4 right-1/4 w-4 h-4 bg-accent rounded-full"></div>
+            <div class="absolute bottom-1/4 left-1/4 w-4 h-4 bg-accent rounded-full"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-4 h-4 bg-secondary rounded-full"></div>
+        </div>
+
+        <!-- 数字时间显示 -->
+        <div class="bg-white/80 rounded-xl p-4 shadow-md mb-6 backdrop-blur-sm">
+            <div id="digital-time" class="text-[clamp(1.5rem,4vw,2.5rem)] font-bold text-dark text-center">
+                00:00:00
+            </div>
+            <div id="date-display" class="text-[clamp(1rem,2vw,1.25rem)] text-dark/70 text-center mt-2">
+                星期一 2023年1月1日
+            </div>
+        </div>
+
+        <!-- 互动元素 -->
+        <div class="grid grid-cols-1 gap-4 mb-6">
+            <button id="greeting-btn" class="bg-white hover:bg-secondary hover:text-white transition-colors duration-300 rounded-lg p-3 shadow flex items-center justify-center wiggle">
+                <i class="fa fa-heart mr-2"></i>
+                <span>今日问候</span>
+            </button>
+        </div>
+
+        <!-- 音乐播放器 -->
+        <div class="bg-white/80 rounded-xl p-4 shadow-md backdrop-blur-sm mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 id="music-title" class="font-bold text-dark">未选择音乐</h3>
+                <div class="flex items-center space-x-2">
+                    <span id="music-status" class="text-sm text-dark/70">未播放</span>
+                    <div id="visualizer" class="music-visualizer hidden">
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                        <div class="music-bar"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="play-btn" class="bg-morning text-white p-2 rounded-full w-12 h-12 flex items-center justify-center hover:bg-morning/80 transition-colors">
+                    <i class="fa fa-play"></i>
+                </button>
+                <div class="flex-1">
+                    <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-morning">
+                </div>
+                <div class="w-8 text-center">
+                    <i id="volume-icon" class="fa fa-volume-up text-dark/70"></i>
+                </div>
+            </div>
+            <div class="mt-3 text-center">
+                <p id="current-track" class="text-sm text-dark/70">未选择音乐</p>
+            </div>
+        </div>
+
+        <!-- 自定义音乐接口 -->
+        <div class="bg-white/80 rounded-xl p-4 shadow-md backdrop-blur-sm mb-6">
+            <h3 class="font-bold text-dark mb-3">自定义音乐</h3>
+            <div class="grid grid-cols-12 gap-2 mb-3">
+                <div class="col-span-8">
+                    <input type="text" id="music-url" placeholder="输入MP3链接或网易云歌曲ID" class="w-full p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-morning">
+                </div>
+                <div class="col-span-4">
+                    <button id="load-music" class="bg-morning text-white w-full p-2 rounded-lg hover:bg-morning/80 transition-colors">
+                        加载音乐
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="random-music" class="bg-morning text-white p-2 rounded-lg hover:bg-morning/80 transition-colors">
+                    <i class="fa fa-random mr-1"></i>随机音乐
+                </button>
+                <button id="search-music" class="bg-white border border-morning text-morning p-2 rounded-lg hover:bg-morning/10 transition-colors">
+                    <i class="fa fa-search mr-1"></i>搜索音乐
+                </button>
+            </div>
+        </div>
+
+        <!-- 搜索结果面板 -->
+        <div id="search-results" class="bg-white/80 rounded-xl p-4 shadow-md backdrop-blur-sm mb-6 hidden">
+            <h3 class="font-bold text-dark mb-3 flex justify-between items-center">
+                <span>搜索结果</span>
+                <button id="close-search" class="text-dark/50 hover:text-dark">
+                    <i class="fa fa-times"></i>
+                </button>
+            </h3>
+            <div id="search-results-list" class="space-y-2 max-h-64 overflow-y-auto">
+                <!-- 搜索结果将在这里动态显示 -->
+                <div class="text-center text-dark/50 py-4">
+                    请输入关键词进行搜索
+                </div>
+            </div>
+        </div>
+
+        <!-- 问候语显示 -->
+        <div id="greeting-display" class="mt-6 bg-white/80 rounded-xl p-4 shadow-md backdrop-blur-sm hidden">
+            <p class="text-center text-dark/80 italic">"美好的一天从珍惜每一刻开始"</p>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="mt-8 text-center text-dark/60 text-sm">
+        <p>时段时钟 &copy; 2023</p>
+    </footer>
+
+    <!-- 音频元素 -->
+    <audio id="bg-music" loop>
+        <source src="" type="audio/mpeg">
+    </audio>
+
+    <!-- 搜索输入模态框 -->
+    <div id="search-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 class="font-bold text-dark mb-4">搜索音乐</h3>
+            <div class="flex space-x-2">
+                <input type="text" id="search-keyword" placeholder="输入歌曲名、歌手或专辑" class="flex-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-morning">
+                <button id="do-search" class="bg-morning text-white p-2 rounded-lg hover:bg-morning/80 transition-colors">
+                    搜索
+                </button>
+            </div>
+            <div class="mt-4 text-right">
+                <button id="cancel-search" class="text-dark/70 hover:text-dark">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API基础URL
+        const API_BASE_URL = 'https://free.wqwlkj.cn/wqwlapi/wyy_random.php';
+        
+        // 初始化时钟
+        function initClock() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 问候语按钮
+            document.getElementById('greeting-btn').addEventListener('click', showGreeting);
+            
+            // 音乐播放器
+            const audio = document.getElementById('bg-music');
+            const playBtn = document.getElementById('play-btn');
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeIcon = document.getElementById('volume-icon');
+            const musicStatus = document.getElementById('music-status');
+            const visualizer = document.getElementById('visualizer');
+            const musicTitle = document.getElementById('music-title');
+            const currentTrack = document.getElementById('current-track');
+            
+            playBtn.addEventListener('click', togglePlay);
+            volumeSlider.addEventListener('input', adjustVolume);
+            
+            // 自定义音乐功能
+            const musicUrl = document.getElementById('music-url');
+            const loadMusicBtn = document.getElementById('load-music');
+            const randomMusicBtn = document.getElementById('random-music');
+            const searchMusicBtn = document.getElementById('search-music');
+            const searchResults = document.getElementById('search-results');
+            const searchResultsList = document.getElementById('search-results-list');
+            const closeSearchBtn = document.getElementById('close-search');
+            const searchModal = document.getElementById('search-modal');
+            const searchKeyword = document.getElementById('search-keyword');
+            const doSearchBtn = document.getElementById('do-search');
+            const cancelSearchBtn = document.getElementById('cancel-search');
+            
+            // 加载音乐
+            loadMusicBtn.addEventListener('click', () => {
+                const input = musicUrl.value.trim();
+                if (!input) return;
+                
+                // 检查是否是数字（网易云歌曲ID）
+                if (/^\d+$/.test(input)) {
+                    fetchMusicByID(input);
+                } else {
+                    // 直接作为URL加载
+                    loadMusic(input, '自定义音乐');
+                }
+            });
+            
+            // 随机音乐
+            randomMusicBtn.addEventListener('click', () => {
+                fetchRandomMusic();
+            });
+            
+            // 搜索音乐
+            searchMusicBtn.addEventListener('click', () => {
+                searchModal.classList.remove('hidden');
+                searchKeyword.focus();
+            });
+            
+            // 关闭搜索结果
+            closeSearchBtn.addEventListener('click', () => {
+                searchResults.classList.add('hidden');
+            });
+            
+            // 执行搜索
+            doSearchBtn.addEventListener('click', () => {
+                const keyword = searchKeyword.value.trim();
+                if (keyword) {
+                    searchMusic(keyword);
+                    searchModal.classList.add('hidden');
+                }
+            });
+            
+            // 取消搜索
+            cancelSearchBtn.addEventListener('click', () => {
+                searchModal.classList.add('hidden');
+            });
+            
+            // 点击模态框背景关闭
+            searchModal.addEventListener('click', (e) => {
+                if (e.target === searchModal) {
+                    searchModal.classList.add('hidden');
+                }
+            });
+            
+            // 搜索结果列表点击事件代理
+            searchResultsList.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-result-item');
+                if (item) {
+                    const songId = item.dataset.id;
+                    if (songId) {
+                        fetchMusicByID(songId);
+                        searchResults.classList.add('hidden');
+                    }
+                }
+            });
+            
+            function fetchRandomMusic() {
+                musicStatus.textContent = '正在获取随机音乐...';
+                fetch(`${API_BASE_URL}?type=json`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.code === 200 && data.data) {
+                            const { url, title, author } = data.data;
+                            loadMusic(url, `${title} - ${author}`);
+                            musicUrl.value = data.data.id || ''; // 存储歌曲ID
+                        } else {
+                            musicStatus.textContent = '获取随机音乐失败';
+                            console.error('获取随机音乐失败:', data);
+                        }
+                    })
+                    .catch(error => {
+                        musicStatus.textContent = '网络错误';
+                        console.error('网络错误:', error);
+                    });
+            }
+            
+            function fetchMusicByID(songId) {
+                musicStatus.textContent = '正在获取音乐...';
+                fetch(`${API_BASE_URL}?type=json&id=${songId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.code === 200 && data.data) {
+                            const { url, title, author } = data.data;
+                            loadMusic(url, `${title} - ${author}`);
+                            musicUrl.value = songId;
+                        } else {
+                            musicStatus.textContent = '获取音乐失败';
+                            console.error('获取音乐失败:', data);
+                        }
+                    })
+                    .catch(error => {
+                        musicStatus.textContent = '网络错误';
+                        console.error('网络错误:', error);
+                    });
+            }
+            
+            function searchMusic(keyword) {
+                searchResultsList.innerHTML = '<div class="text-center text-dark/50 py-4">搜索中...</div>';
+                searchResults.classList.remove('hidden');
+                
+                fetch(`${API_BASE_URL}?type=json&search=${encodeURIComponent(keyword)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.code === 200 && data.data && data.data.length > 0) {
+                            searchResultsList.innerHTML = '';
+                            data.data.forEach(song => {
+                                const item = document.createElement('div');
+                                item.className = 'search-result-item p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors';
+                                item.dataset.id = song.id;
+                                item.innerHTML = `
+                                    <div class="font-medium">${song.title}</div>
+                                    <div class="text-sm text-dark/60">${song.author} - ${song.album}</div>
+                                `;
+                                searchResultsList.appendChild(item);
+                            });
+                        } else {
+                            searchResultsList.innerHTML = '<div class="text-center text-dark/50 py-4">未找到匹配的音乐</div>';
+                        }
+                    })
+                    .catch(error => {
+                        searchResultsList.innerHTML = '<div class="text-center text-dark/50 py-4">搜索失败，请重试</div>';
+                        console.error('搜索失败:', error);
+                    });
+            }
+            
+            function loadMusic(url, title) {
+                audio.pause();
+                audio.src = url;
+                audio.load();
+                
+                musicTitle.textContent = title;
+                currentTrack.textContent = title;
+                musicStatus.textContent = '加载中...';
+                
+                audio.onloadeddata = () => {
+                    musicStatus.textContent = '已加载';
+                    // 自动播放
+                    audio.play().then(() => {
+                        playBtn.innerHTML = '<i class="fa fa-pause"></i>';
+                        musicStatus.textContent = '播放中';
+                        visualizer.classList.remove('hidden');
+                    }).catch(error => {
+                        console.error('播放失败:', error);
+                        musicStatus.textContent = '播放失败';
+                    });
+                };
+                
+                audio.onerror = () => {
+                    musicStatus.textContent = '加载失败';
+                };
+            }
+            
+            function togglePlay() {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        playBtn.innerHTML = '<i class="fa fa-pause"></i>';
+                        musicStatus.textContent = '播放中';
+                        visualizer.classList.remove('hidden');
+                    }).catch(error => {
+                        console.error('播放失败:', error);
+                        musicStatus.textContent = '播放失败';
+                    });
+                } else {
+                    audio.pause();
+                    playBtn.innerHTML = '<i class="fa fa-play"></i>';
+                    musicStatus.textContent = '已暂停';
+                    visualizer.classList.add('hidden');
+                }
+            }
+            
+            function adjustVolume() {
+                audio.volume = volumeSlider.value / 100;
+                if (audio.volume === 0) {
+                    volumeIcon.className = 'fa fa-volume-off text-dark/70';
+                } else if (audio.volume < 0.5) {
+                    volumeIcon.className = 'fa fa-volume-down text-dark/70';
+                } else {
+                    volumeIcon.className = 'fa fa-volume-up text-dark/70';
+                }
+            }
+            
+            // 初始音量设置
+            adjustVolume();
+            
+            // 页面加载时自动获取一首随机音乐
+            fetchRandomMusic();
         }
-      }, 50);
-    }
-    
-    // 更新分享链接
-    function updateShareLink() {
-      if (selectedFiles.length === 0) {
-        shareLinkInput.value = '';
-        shareLinkInput.placeholder = '上传文件后将生成分享链接';
-        return;
-      }
-      
-      // 获取当前分类的上传地址
-      const uploadUrl = uploadBaseUrls[currentCategory];
-      
-      if (selectedFiles.length === 1) {
-        // 单个文件链接
-        shareLinkInput.value = `${uploadUrl}/${encodeURIComponent(selectedFiles[0].name)}`;
-      } else {
-        // 多个文件链接 - 使用逗号分隔多个文件名
-        const fileNames = selectedFiles.map(file => encodeURIComponent(file.name)).join(',');
-        shareLinkInput.value = `${uploadUrl}/?files=${fileNames}`;
-      }
-      
-      shareLinkInput.placeholder = '';
-    }
-    
-    // 更新上传按钮状态
-    function updateUploadButtonState() {
-      if (selectedFiles.length > 0) {
-        uploadBtn.disabled = false;
-        uploadBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
-      } else {
-        uploadBtn.disabled = true;
-        uploadBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
-      }
-    }
-    
-    // 复制链接到剪贴板
-    function copyLinkToClipboard() {
-      if (!shareLinkInput.value) {
-        alert('没有可复制的链接');
-        return;
-      }
-      
-      shareLinkInput.select();
-      document.execCommand('copy');
-      
-      // 显示复制成功提示
-      copyNotification.classList.remove('hidden');
-      setTimeout(() => {
-        copyNotification.classList.add('hidden');
-      }, 2000);
-    }
-    
-    // 初始化事件监听
-    function initEventListeners() {
-      // 点击上传区域
-      uploadContainer.addEventListener('click', () => {
-        if (!uploadProgressContainer.classList.contains('hidden')) return;
-        fileInput.click();
-      });
-      
-      // 文件选择变化
-      fileInput.addEventListener('change', () => {
-        handleFileSelect(fileInput.files);
-      });
-      
-      // 拖放事件
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadContainer.addEventListener(eventName, preventDefaults, false);
-      });
-      
-      function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      
-      ['dragenter', 'dragover'].forEach(eventName => {
-        uploadContainer.addEventListener(eventName, highlight, false);
-      });
-      
-      ['dragleave', 'drop'].forEach(eventName => {
-        uploadContainer.addEventListener(eventName, unhighlight, false);
-      });
-      
-      function highlight() {
-        uploadContainer.classList.add('border-primary');
-        uploadContainer.classList.add('bg-primary/5');
-      }
-      
-      function unhighlight() {
-        uploadContainer.classList.remove('border-primary');
-        uploadContainer.classList.remove('bg-primary/5');
-      }
-      
-      uploadContainer.addEventListener('drop', handleDrop, false);
-      
-      function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFileSelect(files);
-      }
-      
-      // 分类选择变化
-      categorySelect.addEventListener('change', () => {
-        currentCategory = categorySelect.value;
-        updateShareLink();
-      });
-      
-      // 复制链接按钮
-      copyLinkBtn.addEventListener('click', copyLinkToClipboard);
-      
-      // 上传按钮
-      uploadBtn.addEventListener('click', uploadFiles);
-    }
-    
-    // 初始化应用
-    function initApp() {
-      initEventListeners();
-      updateUploadButtonState();
-    }
-    
-    // 启动应用
-    document.addEventListener('DOMContentLoaded', initApp);
-  </script>
+
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            
+            // 更新时段显示
+            updateTimeOfDay(now);
+            
+            // 更新模拟时钟
+            const secondsRatio = now.getSeconds() / 60;
+            const minutesRatio = (now.getMinutes() + secondsRatio) / 60;
+            const hoursRatio = (now.getHours() % 12 + minutesRatio) / 12;
+            
+            setRotation(document.getElementById('second-hand'), secondsRatio);
+            setRotation(document.getElementById('minute-hand'), minutesRatio);
+            setRotation(document.getElementById('hour-hand'), hoursRatio);
+            
+            // 更新数字时钟
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('digital-time').textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // 更新日期
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const dayName = days[now.getDay()];
+            const date = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日';
+            document.getElementById('date-display').textContent = `${dayName} ${date}`;
+        }
+
+        // 更新时段显示
+        function updateTimeOfDay(now) {
+            const hour = now.getHours();
+            const timeOfDayEl = document.getElementById('time-of-day');
+            const body = document.body;
+            const clockBorder = document.querySelector('.border-morning');
+            const clockHand = document.querySelector('.bg-morning');
+            const clockDot = document.querySelectorAll('.bg-morning');
+            const playBtn = document.getElementById('play-btn');
+            const volumeSlider = document.getElementById('volume-slider');
+            
+            let timeOfDay, color;
+            
+            if (hour >= 5 && hour < 9) {
+                timeOfDay = '早晨';
+                color = 'morning';
+                timeOfDayEl.innerHTML = '<i class="fa fa-sun-o mr-2"></i>早晨';
+            } else if (hour >= 9 && hour < 12) {
+                timeOfDay = '上午';
+                color = 'noon';
+                timeOfDayEl.innerHTML = '<i class="fa fa-sun-o mr-2"></i>上午';
+            } else if (hour >= 12 && hour < 14) {
+                timeOfDay = '中午';
+                color = 'noon';
+                timeOfDayEl.innerHTML = '<i class="fa fa-sun-o mr-2"></i>中午';
+            } else if (hour >= 14 && hour < 18) {
+                timeOfDay = '下午';
+                color = 'afternoon';
+                timeOfDayEl.innerHTML = '<i class="fa fa-cloud mr-2"></i>下午';
+            } else if (hour >= 18 && hour < 22) {
+                timeOfDay = '晚上';
+                color = 'evening';
+                timeOfDayEl.innerHTML = '<i class="fa fa-moon-o mr-2"></i>晚上';
+            } else {
+                timeOfDay = '深夜';
+                color = 'night';
+                timeOfDayEl.innerHTML = '<i class="fa fa-moon-o mr-2"></i>深夜';
+            }
+            
+            // 更新颜色
+            timeOfDayEl.className = `text-[clamp(2rem,5vw,3rem)] font-bold text-${color} text-center mb-6 text-shadow wiggle`;
+            
+            // 移除旧的颜色类并添加新的
+            body.className = body.className.replace(/from-\w+\/20/, `from-${color}/20`);
+            
+            if (clockBorder) {
+                clockBorder.className = clockBorder.className.replace(/border-\w+/, `border-${color}`);
+            }
+            
+            if (clockHand) {
+                clockHand.className = clockHand.className.replace(/bg-\w+/, `bg-${color}`);
+            }
+            
+            if (clockDot) {
+                clockDot.forEach(dot => {
+                    dot.className = dot.className.replace(/bg-\w+/, `bg-${color}`);
+                });
+            }
+            
+            // 更新播放按钮和音量滑块的颜色
+            if (playBtn) {
+                playBtn.className = playBtn.className.replace(/bg-\w+/, `bg-${color}`);
+                playBtn.className = playBtn.className.replace(/hover:bg-\w+/, `hover:${color}/80`);
+            }
+            
+            if (volumeSlider) {
+                volumeSlider.className = volumeSlider.className.replace(/accent-\w+/, `accent-${color}`);
+            }
+        }
+
+        // 设置指针旋转角度
+        function setRotation(element, rotationRatio) {
+            element.style.transform = `translateX(-50%) rotate(${rotationRatio * 360}deg)`;
+        }
+
+        // 显示问候语
+        function showGreeting() {
+            const greetings = [
+                "美好的一天从珍惜每一刻开始",
+                "时间就像海绵里的水，只要愿挤，总还是有的",
+                "今天也要元气满满哦！",
+                "每一秒都是限量版",
+                "微笑吧，像不曾受过伤一样",
+                "生活是一面镜子，你对它笑，它就对你笑",
+                "愿你的今天充满阳光和爱",
+                "不要等待机会，而要创造机会",
+                "今日事，今日毕",
+                "快乐其实很简单，就是珍惜现在拥有的"
+            ];
+            
+            const greetingDisplay = document.getElementById('greeting-display');
+            const randomIndex = Math.floor(Math.random() * greetings.length);
+            greetingDisplay.querySelector('p').textContent = `"${greetings[randomIndex]}"`;
+            
+            // 显示问候语
+            greetingDisplay.classList.remove('hidden');
+            
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                greetingDisplay.classList.add('hidden');
+            }, 5000);
+        }
+
+        // 页面加载完成后初始化时钟
+        document.addEventListener('DOMContentLoaded', initClock);
+    </script>
 </body>
 </html>
     
