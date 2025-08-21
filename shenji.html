@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账号升级系统</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* main.css 内容 */
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    overflow-x:hidden;
+    transition:background 0.5s ease;
+}
+
+.container{
+    background:white;
+    border-radius:20px;
+    padding:40px 30px;
+    width:100%;
+    max-width:350px;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+    position:relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 主题颜色选择器样式 - 可收纳展开 */
+.theme-toggle {
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: color 0.3s;
+}
+.theme-toggle:hover {
+    color: #667eea;
+}
+/* 主题颜色选择器的图标旋转动画 */
+.theme-toggle i {
+    transition: transform 0.3s ease;
+}
+.theme-toggle.expanded i {
+    transform: rotate(180deg);
+}
+
+.theme-selector {
+    margin-top: 10px;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    display: none; /* 默认隐藏 */
+}
+.theme-selector.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.theme-title {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+.theme-colors {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.theme-color {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid transparent;
+}
+.theme-color:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.theme-color.active {
+    border-color: #333;
+    transform: scale(1.1);
+}
+
+.referer{
+    position:absolute;
+    top:10px;
+    left:15px;
+    font-size:14px;
+    color:#555;
+}
+.referer input{
+    background:transparent;
+    border:none;
+    outline:none;
+    width:70px;
+    font-weight:bold;
+    transition: color 0.3s;
+}
+
+.game-icon{
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    background:#f0f0f0;
+    margin:30px auto 15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+    border:2px dashed #ccc;
+    transition:transform .3s,box-shadow .3s;
+    animation:float 1.5s ease-in-out infinite alternate;
+}
+.game-icon:hover{
+    transform:translateY(-5px);
+    box-shadow:0 8px 20px rgba(102,126,234,.4);
+}
+@keyframes float{
+    0%{transform:translateY(-5px);}
+    100%{transform:translateY(5px);}
+}
+.game-icon img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+#avatarInput{display:none;}
+.game-name-input{
+    text-align:center;
+    font-size:20px;
+    font-weight:bold;
+    color:#333;
+    margin-bottom:25px;
+    background:transparent;
+    border:none;
+    outline:none;
+    width:100%;
+}
+.game-name-input::placeholder{color:#999;}
+
+/* 输入框基础样式 */
+.input-group{
+    margin-bottom:20px;
+    position: relative;
+}
+.input-group label{
+    display:block;
+    margin-bottom:8px;
+    color:#555;
+    font-size:14px;
+    transition: color 0.3s;
+}
+/* 输入框容器 */
+.input-wrapper {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+/* 输入框样式 */
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 16px;
+    border: none;
+    background-color: #f8fafc;
+    transition: all 0.3s ease;
+    z-index: 2;
+    position: relative;
+}
+.input-wrapper input:focus {
+    outline: none;
+    box-shadow: none;
+}
+/* 输入框底部装饰线 */
+.input-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #e2e8f0;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+/* 输入框获得焦点时的底部装饰线动画 */
+.input-wrapper:focus-within .input-line {
+    height: 3px;
+    transform: translateX(0);
+}
+/* 输入框获得焦点时的背景变化 */
+.input-wrapper:focus-within {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.upgrade-btn{
+    width:100%;
+    padding:15px;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:all .3s;
+    position:relative;
+    margin-bottom:25px;
+}
+
+.upgrade-btn:hover:not(:disabled){transform:translateY(-2px);}
+.upgrade-btn:disabled{opacity:.7;cursor:not-allowed;}
+.loading-dots::after{
+    content:'';
+    display:inline-block;
+    width:20px;
+    height:20px;
+    border:3px solid #ffffff33;
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+    margin-left:8px;
+    vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.datetime-container{
+    text-align:center;
+    margin-top:auto;
+    padding-top:15px;
+    min-height:16px;
+}
+.datetime{
+    color:#666;
+    font-size:13px;
+    cursor:pointer;
+    transition:color 0.3s;
+}
+.datetime:hover{
+    color:#667eea;
+}
+.system-title{
+    text-align:center;
+    color:#666;
+    font-size:14px;
+    margin-top:5px;
+}
+.privileges{
+    text-align:center;
+    color:#666;
+    font-size:14px;
+    margin-top:5px;
+}
+.privileges i{
+    color:#667eea;
+    margin-right:5px;
+}
+
+.success-page{display:none;text-align:center;}
+.success-icon-wrap{
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    margin:0 auto 20px;
+    box-shadow:0 4px 15px rgba(0,0,0,.15);
+    overflow:hidden;
+    animation:float 1.5s ease-in-out infinite alternate;
+}
+.success-icon-wrap img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+.success-title{font-size:22px;color:#333;margin-bottom:20px;font-weight:bold;}
+
+/* 特权区域基础样式 */
+.benefit-box{
+    border-radius:16px;
+    padding:18px 22px;
+    margin:25px auto;
+    font-size:16px;
+    line-height:2.2;
+    text-align:left;
+    width:fit-content;
+    max-width:100%;
+    box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+.benefit-box strong,
+.benefit-box span {
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.back-btn{
+    margin-top:30px;
+    padding:12px 30px;
+    background:#f0f0f0;
+    color:#666;
+    border:none;
+    border-radius:8px;
+    font-size:14px;
+    cursor:pointer;
+    transition: all 0.3s;
+}
+.back-btn:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 彩带效果 */
+.confetti {
+    position: fixed;
+    opacity: 0;
+    top: -20px;
+    animation: confetti-fall 1.8s ease-in-out forwards;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
+
+.confetti.rectangle {
+    width: 12px;
+    height: 6px;
+}
+
+.confetti.circle {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.confetti.diamond {
+    width: 8px;
+    height: 8px;
+    transform: rotate(45deg);
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(1080deg) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* themes.css 内容 */
+/* 红色主题 */
+body.theme-red {
+    background:linear-gradient(135deg,#ff416c 0%,#ff4b2b 100%);
+}
+body.theme-red .upgrade-btn {
+    background:linear-gradient(135deg,#ff416c 0%,#ff4b2b 100%);
+}
+body.theme-red .input-wrapper input {
+    background-color: #fff5f5;
+}
+body.theme-red .input-line {
+    background-color: #fecaca;
+}
+body.theme-red .input-wrapper:focus-within .input-line {
+    background-color: #ff416c;
+}
+body.theme-red .input-group label {
+    color: #e53e3e;
+}
+body.theme-red .privileges i,
+body.theme-red .theme-toggle:hover,
+body.theme-red .referer input,
+body.theme-red .datetime:hover {
+    color:#ff416c;
+}
+body.theme-red .benefit-box {
+    background:linear-gradient(135deg, #ffebee 0%, #fce4e7 100%);
+}
+body.theme-red .benefit-box strong,
+body.theme-red .benefit-box span {
+    color:#d32f2f;
+}
+
+/* 橙色主题 */
+body.theme-orange {
+    background:linear-gradient(135deg,#ff9966 0%,#ff5e62 100%);
+}
+body.theme-orange .upgrade-btn {
+    background:linear-gradient(135deg,#ff9966 0%,#ff5e62 100%);
+}
+body.theme-orange .input-wrapper input {
+    background-color: #fff7ed;
+}
+body.theme-orange .input-line {
+    background-color: #fed7d7;
+}
+body.theme-orange .input-wrapper:focus-within .input-line {
+    background-color: #ff9966;
+}
+body.theme-orange .input-group label {
+    color: #dd6b20;
+}
+body.theme-orange .privileges i,
+body.theme-orange .theme-toggle:hover,
+body.theme-orange .referer input,
+body.theme-orange .datetime:hover {
+    color:#ff9966;
+}
+body.theme-orange .benefit-box {
+    background:linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+}
+body.theme-orange .benefit-box strong,
+body.theme-orange .benefit-box span {
+    color:#e65100;
+}
+
+/* 蓝色主题（默认） */
+body.theme-blue {
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+}
+body.theme-blue .upgrade-btn {
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+}
+body.theme-blue .input-wrapper input {
+    background-color: #edf2f7;
+}
+body.theme-blue .input-line {
+    background-color: #cbd5e0;
+}
+body.theme-blue .input-wrapper:focus-within .input-line {
+    background-color: #667eea;
+}
+body.theme-blue .input-group label {
+    color: #4a5568;
+}
+body.theme-blue .privileges i,
+body.theme-blue .theme-toggle:hover,
+body.theme-blue .referer input,
+body.theme-blue .datetime:hover {
+    color:#667eea;
+}
+body.theme-blue .benefit-box {
+    background:linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+body.theme-blue .benefit-box strong,
+body.theme-blue .benefit-box span {
+    color:#1565c0;
+}
+
+/* 绿色主题 */
+body.theme-green {
+    background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);
+}
+body.theme-green .upgrade-btn {
+    background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);
+}
+body.theme-green .input-wrapper input {
+    background-color: #f0fff4;
+}
+body.theme-green .input-line {
+    background-color: #c6f6d5;
+}
+body.theme-green .input-wrapper:focus-within .input-line {
+    background-color: #43e97b;
+}
+body.theme-green .input-group label {
+    color: #2e7d32;
+}
+body.theme-green .privileges i,
+body.theme-green .theme-toggle:hover,
+body.theme-green .referer input,
+body.theme-green .datetime:hover {
+    color:#43e97b;
+}
+body.theme-green .benefit-box {
+    background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+body.theme-green .benefit-box strong,
+body.theme-green .benefit-box span {
+    color:#2e7d32;
+}
+
+/* 黑色主题 */
+body.theme-black {
+    background:linear-gradient(135deg,#141e30 0%,#243b55 100%);
+}
+body.theme-black .upgrade-btn {
+    background:linear-gradient(135deg,#3a6073 0%,#16222a 100%);
+}
+/* 黑色主题输入框调整为柔和灰色系 */
+body.theme-black .input-wrapper input {
+    background-color: #e5e7eb; /* 浅灰色背景，降低突兀感 */
+    color: #1f2937; /* 深灰色文字保持清晰可读 */
+}
+body.theme-black .input-wrapper input::placeholder {
+    color: #6b7280; /* 中等灰色占位符 */
+}
+body.theme-black .input-line {
+    background-color: #9ca3af; /* 协调的浅灰底线 */
+}
+body.theme-black .input-wrapper:focus-within .input-line {
+    background-color: #38f9d7; /* 保持主题特色的焦点颜色 */
+}
+body.theme-black .input-group label {
+    color: #4b5563; /* 与浅灰输入框协调的标签颜色 */
+}
+body.theme-black .privileges i,
+body.theme-black .theme-toggle:hover,
+body.theme-black .referer input,
+body.theme-black .datetime:hover {
+    color:#38f9d7;
+}
+body.theme-black .benefit-box {
+    background:linear-gradient(135deg, #263238 0%, #37474f 100%);
+}
+body.theme-black .benefit-box strong,
+body.theme-black .benefit-box span {
+    color:#b2ebf2;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+}
+
+/* 粉色主题 */
+body.theme-pink {
+    background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 99%,#fad0c4 100%);
+}
+body.theme-pink .upgrade-btn {
+    background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 99%,#fad0c4 100%);
+}
+body.theme-pink .input-wrapper input {
+    background-color: #fff0f6;
+}
+body.theme-pink .input-line {
+    background-color: #feb2c7;
+}
+body.theme-pink .input-wrapper:focus-within .input-line {
+    background-color: #ff9a9e;
+}
+body.theme-pink .input-group label {
+    color: #d64045;
+}
+body.theme-pink .privileges i,
+body.theme-pink .theme-toggle:hover,
+body.theme-pink .referer input,
+body.theme-pink .datetime:hover {
+    color:#ff9a9e;
+}
+body.theme-pink .benefit-box {
+    background:linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+}
+body.theme-pink .benefit-box strong,
+body.theme-pink .benefit-box span {
+    color:#c2185b;
+}
+</style>
+</head>
+<body class="theme-blue">
+<div class="container">
+    <div class="main-page" id="mainPage">
+        <div class="referer">
+            专属推荐官：<input id="refererInput" value="xxx" maxlength="6" oninput="saveReferer()">
+        </div>
+
+        <label for="avatarInput">
+            <div class="game-icon">
+                <img id="avatarPreview" style="display:none"/>
+                <span id="uploadHint" style="color:#999;font-size:12px;">点击上传头像</span>
+            </div>
+        </label>
+        <input type="file" id="avatarInput" accept="image/*" onchange="previewAvatar(event)">
+
+        <input type="text" class="game-name-input" id="gameNameInput" placeholder="点击修改游戏名称" value="传奇小游戏" maxlength="10" oninput="saveGameName()">
+
+        <div class="input-group">
+            <label>请输入ID：</label>
+            <div class="input-wrapper">
+                <input type="text" id="gameId" placeholder="请输入升级账号" maxlength="20">
+                <div class="input-line"></div>
+            </div>
+        </div>
+
+        <button class="upgrade-btn" id="upgradeBtn" onclick="upgradeAccount()">确认升级</button>
+        
+        <div class="system-title">账号升级系统</div>
+        <div class="privileges"><i class="fas fa-star"></i>专属标识，高级特权</div>
+        
+        <!-- 主题颜色选择器（可收纳展开） -->
+        <div class="theme-toggle" onclick="toggleThemeSelector()">
+            <span>主题颜色</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="theme-selector">
+            <div class="theme-title">选择主题色</div>
+            <div class="theme-colors">
+                <div class="theme-color" style="background:linear-gradient(135deg,#ff416c 0%,#ff4b2b 100%);" data-theme="red"></div>
+                <div class="theme-color" style="background:linear-gradient(135deg,#ff9966 0%,#ff5e62 100%);" data-theme="orange"></div>
+                <div class="theme-color active" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);" data-theme="blue"></div>
+                <div class="theme-color" style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);" data-theme="green"></div>
+                <div class="theme-color" style="background:linear-gradient(135deg,#141e30 0%,#243b55 100%);" data-theme="black"></div>
+                <div class="theme-color" style="background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 99%,#fad0c4 100%);" data-theme="pink"></div>
+            </div>
+        </div>
+        
+        <div class="datetime-container" onclick="toggleDateTime()">
+            <div class="datetime" id="datetime"></div>
+        </div>
+    </div>
+
+    <div class="success-page" id="successPage">
+        <div class="success-icon-wrap">
+            <img id="successAvatar" src="" alt="头像">
+        </div>
+        <div class="success-title">升级成功！</div>
+        <p style="color:#666;margin-bottom:5px;" id="successText">已将<strong></strong>成功升级为内测账号</p>
+
+        <div class="benefit-box">
+            ✨ <span>任务奖励翻倍</span><br>
+            💰 <span>专属提现秒到账</span><br>
+            🎯 <span>达量免广告 (0/40)</span>
+        </div>
+
+        <button class="back-btn" onclick="backToMain()">返回首页</button>
+    </div>
+</div>
+
+<script>
+// main.js 内容
+// 页面加载时从本地存储恢复数据
+window.addEventListener('load', function() {
+    loadSavedData();
+    initThemeSelector();
+    initDateTime();
+});
+
+// 初始化日期时间显示
+function initDateTime() {
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+}
+
+// 日期时间显示更新
+function updateDateTime(){
+    const now = new Date();
+    const str = now.toLocaleString('zh-CN',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const datetimeEl = document.getElementById('datetime');
+    datetimeEl.textContent = str;
+    datetimeEl.style.display = window.dateTimeVisible !== false ? 'block' : 'none';
+}
+
+// 保存推荐官信息到本地存储
+function saveReferer() {
+    const referer = document.getElementById('refererInput').value.trim();
+    localStorage.setItem('referer', referer);
+}
+
+// 保存游戏名称到本地存储
+function saveGameName() {
+    const gameName = document.getElementById('gameNameInput').value.trim();
+    if (gameName) {
+        localStorage.setItem('gameName', gameName);
+    }
+}
+
+// 头像预览并保存到本地存储
+function previewAvatar(e){
+    const file = e.target.files[0];
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(evt){
+            const url = evt.target.result;
+            // 显示头像
+            document.getElementById('avatarPreview').src = url;
+            document.getElementById('avatarPreview').style.display = 'block';
+            document.getElementById('uploadHint').style.display = 'none';
+            document.getElementById('successAvatar').src = url;
+            
+            // 保存头像到本地存储
+            localStorage.setItem('avatarUrl', url);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// 从本地存储加载数据
+function loadSavedData() {
+    // 加载推荐官信息
+    const savedReferer = localStorage.getItem('referer');
+    if (savedReferer) {
+        document.getElementById('refererInput').value = savedReferer;
+    }
+    
+    // 加载游戏名称
+    const savedGameName = localStorage.getItem('gameName');
+    if (savedGameName) {
+        document.getElementById('gameNameInput').value = savedGameName;
+    }
+    
+    // 加载头像
+    const savedAvatarUrl = localStorage.getItem('avatarUrl');
+    if (savedAvatarUrl) {
+        document.getElementById('avatarPreview').src = savedAvatarUrl;
+        document.getElementById('avatarPreview').style.display = 'block';
+        document.getElementById('uploadHint').style.display = 'none';
+        document.getElementById('successAvatar').src = savedAvatarUrl;
+    }
+    
+    // 加载时间显示状态
+    const savedDateTimeVisible = localStorage.getItem('dateTimeVisible');
+    if (savedDateTimeVisible !== null) {
+        window.dateTimeVisible = savedDateTimeVisible === 'true';
+    } else {
+        window.dateTimeVisible = true;
+    }
+    
+    // 加载保存的主题
+    const savedTheme = localStorage.getItem('selectedTheme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    }
+}
+
+// 升级账号
+function upgradeAccount(){
+    const id = document.getElementById('gameId').value.trim();
+    const name = document.getElementById('gameNameInput').value.trim() || '传奇小游戏';
+    if(!id){
+        alert('请输入升级账号！');
+        return;
+    }
+
+    const btn = document.getElementById('upgradeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '升级中<span class="loading-dots"></span>';
+
+    setTimeout(() => {
+        document.querySelector('.success-title').textContent = `${name} 升级成功！`;
+        document.querySelector('#successText strong').textContent = id;
+        document.getElementById('mainPage').style.display = 'none';
+        document.getElementById('successPage').style.display = 'block';
+        
+        createConfetti();
+        
+        btn.disabled = false;
+        btn.innerHTML = '确认升级';
+    }, 1000);
+}
+
+// 返回首页
+function backToMain(){
+    document.getElementById('successPage').style.display = 'none';
+    document.getElementById('mainPage').style.display = 'block';
+    document.getElementById('gameId').value = '';
+    
+    const confetti = document.querySelectorAll('.confetti');
+    confetti.forEach(c => c.remove());
+}
+
+// ui.js 内容
+// 主题相关功能
+function initThemeSelector() {
+    const themeColors = document.querySelectorAll('.theme-color');
+    
+    // 为每个主题颜色添加点击事件
+    themeColors.forEach(color => {
+        color.addEventListener('click', function() {
+            // 移除所有主题的active类
+            themeColors.forEach(c => c.classList.remove('active'));
+            // 给当前点击的主题添加active类
+            this.classList.add('active');
+            
+            // 获取主题名称并应用
+            const theme = this.getAttribute('data-theme');
+            setTheme(theme);
+        });
+    });
+    
+    // 恢复主题选择器的展开状态
+    const isExpanded = localStorage.getItem('themeSelectorExpanded') === 'true';
+    if (isExpanded) {
+        document.querySelector('.theme-toggle').classList.add('expanded');
+        document.querySelector('.theme-selector').classList.add('show');
+    }
+}
+
+// 设置主题
+function setTheme(theme) {
+    // 移除所有主题类
+    document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+    // 添加选中的主题类
+    document.body.classList.add(`theme-${theme}`);
+    // 保存主题到本地存储
+    localStorage.setItem('selectedTheme', theme);
+    
+    // 更新主题选择器的active状态
+    const themeColors = document.querySelectorAll('.theme-color');
+    themeColors.forEach(color => {
+        if (color.getAttribute('data-theme') === theme) {
+            color.classList.add('active');
+        } else {
+            color.classList.remove('active');
+        }
+    });
+}
+
+// 切换主题选择器的显示/隐藏
+function toggleThemeSelector() {
+    const toggle = document.querySelector('.theme-toggle');
+    const selector = document.querySelector('.theme-selector');
+    
+    toggle.classList.toggle('expanded');
+    selector.classList.toggle('show');
+    
+    // 保存主题选择器的展开状态
+    localStorage.setItem('themeSelectorExpanded', selector.classList.contains('show'));
+}
+
+// 切换日期时间显示
+function toggleDateTime() {
+    window.dateTimeVisible = !window.dateTimeVisible;
+    document.getElementById('datetime').style.display = window.dateTimeVisible ? 'block' : 'none';
+    // 保存时间显示状态到本地存储
+    localStorage.setItem('dateTimeVisible', window.dateTimeVisible);
+}
+
+// 创建彩带效果
+function createConfetti() {
+    // 先清除已有的彩带
+    const existingConfetti = document.querySelectorAll('.confetti');
+    existingConfetti.forEach(confetti => confetti.remove());
+    
+    // 根据当前主题调整彩带颜色
+    let colors = ['#ff3864', '#ffdd57', '#23d160', '#209cee', '#61dafb', '#a333c8', '#ff9f1c', '#ff2d55'];
+    
+    // 黑色主题使用更明亮的彩带颜色
+    if (document.body.classList.contains('theme-black')) {
+        colors = ['#ff416c', '#ffdd57', '#43e97b', '#209cee', '#61dafb', '#ff9f1c', '#ffea00', '#38f9d7'];
+    }
+    // 粉色主题使用更匹配的彩带颜色
+    else if (document.body.classList.contains('theme-pink')) {
+        colors = ['#ff9a9e', '#fad0c4', '#ffcdd2', '#f8bbd0', '#e1bee7', '#ff80ab', '#ff4081', '#f50057'];
+    }
+    
+    const shapes = ['rectangle', 'circle', 'diamond'];
+    const container = document.body;
+    
+    // 创建100个彩带元素
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        confetti.classList.add(shape);
+        
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.animationDelay = `${Math.random() * 1}s`;
+        confetti.style.animationDuration = `${Math.random() * 0.5 + 1.5}s`;
+        
+        const drift = (Math.random() - 0.5) * 100;
+        confetti.style.transform = `translateX(${drift}px)`;
+        
+        container.appendChild(confetti);
+        
+        // 动画结束后移除元素
+        setTimeout(() => {
+            confetti.remove();
+        }, 2000);
+    }
+}
+</script>
+</body>
+</html>
